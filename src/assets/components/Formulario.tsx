@@ -12,6 +12,7 @@ import {
   initialFormState,
 } from "./Interface";
 
+
 export function Formulario() {
   const [formulario, setFormulario] = useState<IFormulario>(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -98,12 +99,11 @@ export function Formulario() {
   };
 
   const validateForm = (): boolean => {
-    // Solo validar nombre, email y foto como obligatorios
-    if (!formulario.nombre || !formulario.email || !formulario.foto) {
+    if (!formulario.nombre || !formulario.email || !formulario.puesto) {
       Swal.fire({
         icon: "error",
         title: "Campos requeridos",
-        text: "Nombre, email y foto son campos obligatorios",
+        text: "Nombre, email y puesto son campos obligatorios",
       });
       return false;
     }
@@ -183,7 +183,6 @@ export function Formulario() {
       setIsSubmitting(false);
     }
   };
-
   return (
     <div className="form-container">
       <h1>Formulario de CV Profesional</h1>
@@ -297,13 +296,8 @@ export function Formulario() {
           </div>
 
           <div className="form-group">
-            <label className="required">Foto</label>
-            <input 
-              type="file" 
-              accept="image/*" 
-              onChange={handleFileChange}
-              required
-            />
+            <label>Foto</label>
+            <input type="file" accept="image/*" onChange={handleFileChange} />
             {formulario.foto && (
               <img
                 src={formulario.foto}
@@ -314,16 +308,19 @@ export function Formulario() {
           </div>
         </div>
 
-        {/* Sección de Puesto Solicitado - Ahora no es obligatoria */}
+        {/* Sección de Puesto Solicitado */}
         <h2>Puesto solicitado</h2>
         <div className="form-section">
           <div className="form-group">
-            <label>Puesto/Posición/Estudios aplicados</label>
+            <label className="required">
+              Puesto/Posición/Estudios aplicados
+            </label>
             <input
               type="text"
               name="puesto"
               value={formulario.puesto}
               onChange={handleChange}
+              required
               placeholder="Ej: Desarrollador Frontend"
             />
           </div>
@@ -340,8 +337,361 @@ export function Formulario() {
           </div>
         </div>
 
-        {/* Resto del formulario (experiencias, educación, idiomas, habilidades) permanece igual */}
-        {/* ... */}
+        {/* Sección de Experiencia Laboral */}
+        <h2>Experiencia laboral</h2>
+        {formulario.experiencias.map((exp, index) => (
+          <div key={index} className="form-section array-item">
+            <div className="form-group">
+              <label>Fecha (Desde - Hasta)</label>
+              <input
+                type="text"
+                value={exp.fecha}
+                onChange={(e) =>
+                  handleArrayChange(
+                    "experiencias",
+                    index,
+                    "fecha",
+                    e.target.value
+                  )
+                }
+                placeholder="MM/AAAA - MM/AAAA"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Puesto ocupado</label>
+              <input
+                type="text"
+                value={exp.puesto}
+                onChange={(e) =>
+                  handleArrayChange(
+                    "experiencias",
+                    index,
+                    "puesto",
+                    e.target.value
+                  )
+                }
+                placeholder="Ej: Desarrollador Frontend"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Empleador</label>
+              <input
+                type="text"
+                value={exp.empleador}
+                onChange={(e) =>
+                  handleArrayChange(
+                    "experiencias",
+                    index,
+                    "empleador",
+                    e.target.value
+                  )
+                }
+                placeholder="Nombre de la empresa"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Responsabilidades</label>
+              <textarea
+                value={exp.responsabilidades}
+                onChange={(e) =>
+                  handleArrayChange(
+                    "experiencias",
+                    index,
+                    "responsabilidades",
+                    e.target.value
+                  )
+                }
+                rows={3}
+                placeholder="Describe tus responsabilidades en este puesto"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Sector</label>
+              <input
+                type="text"
+                value={exp.sector}
+                onChange={(e) =>
+                  handleArrayChange(
+                    "experiencias",
+                    index,
+                    "sector",
+                    e.target.value
+                  )
+                }
+                placeholder="Ej: Tecnología, Salud, Educación"
+              />
+            </div>
+
+            <button
+              type="button"
+              className="remove-btn"
+              onClick={() => removeItem("experiencias", index)}
+            >
+              Eliminar
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="add-btn"
+          onClick={() => addNewItem("experiencias")}
+        >
+          + Añadir Experiencia
+        </button>
+
+        {/* Sección de Educación */}
+        <h2>Educación y formación</h2>
+        {formulario.educaciones.map((edu, index) => (
+          <div key={index} className="form-section array-item">
+            <div className="form-group">
+              <label>Fecha (Desde - Hasta)</label>
+              <input
+                type="text"
+                value={edu.fecha}
+                onChange={(e) =>
+                  handleArrayChange(
+                    "educaciones",
+                    index,
+                    "fecha",
+                    e.target.value
+                  )
+                }
+                placeholder="MM/AAAA - MM/AAAA"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Título obtenido</label>
+              <input
+                type="text"
+                value={edu.titulo}
+                onChange={(e) =>
+                  handleArrayChange(
+                    "educaciones",
+                    index,
+                    "titulo",
+                    e.target.value
+                  )
+                }
+                placeholder="Ej: Licenciatura en Informática"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Nivel EQF (si aplica)</label>
+              <input
+                type="text"
+                value={edu.nivel}
+                onChange={(e) =>
+                  handleArrayChange(
+                    "educaciones",
+                    index,
+                    "nivel",
+                    e.target.value
+                  )
+                }
+                placeholder="Ej: Nivel 5"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Institución</label>
+              <input
+                type="text"
+                value={edu.institucion}
+                onChange={(e) =>
+                  handleArrayChange(
+                    "educaciones",
+                    index,
+                    "institucion",
+                    e.target.value
+                  )
+                }
+                placeholder="Nombre de la institución"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Materias principales/habilidades</label>
+              <textarea
+                value={edu.materias}
+                onChange={(e) =>
+                  handleArrayChange(
+                    "educaciones",
+                    index,
+                    "materias",
+                    e.target.value
+                  )
+                }
+                rows={2}
+                placeholder="Lista de materias relevantes o habilidades adquiridas"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Logros</label>
+              <textarea
+                value={edu.logros}
+                onChange={(e) =>
+                  handleArrayChange(
+                    "educaciones",
+                    index,
+                    "logros",
+                    e.target.value
+                  )
+                }
+                rows={2}
+                placeholder="Premios, reconocimientos o logros especiales"
+              />
+            </div>
+
+            <button
+              type="button"
+              className="remove-btn"
+              onClick={() => removeItem("educaciones", index)}
+            >
+              Eliminar
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="add-btn"
+          onClick={() => addNewItem("educaciones")}
+        >
+          + Añadir Educación
+        </button>
+
+        {/* Sección de Idiomas */}
+        <h2>Idiomas</h2>
+        {formulario.idiomas.map((idioma, index) => (
+          <div key={index} className="form-section array-item">
+            <div className="form-group">
+              <label>Idioma</label>
+              <input
+                type="text"
+                value={idioma.idioma}
+                onChange={(e) =>
+                  handleArrayChange("idiomas", index, "idioma", e.target.value)
+                }
+                placeholder="Ej: Inglés"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Comprensión auditiva</label>
+              <select
+                value={idioma.comprension}
+                onChange={(e) =>
+                  handleArrayChange(
+                    "idiomas",
+                    index,
+                    "comprension",
+                    e.target.value
+                  )
+                }
+              >
+                <option value="">Nivel</option>
+                <option value="A1">A1</option>
+                <option value="A2">A2</option>
+                <option value="B1">B1</option>
+                <option value="B2">B2</option>
+                <option value="C1">C1</option>
+                <option value="C2">C2</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Expresión oral</label>
+              <select
+                value={idioma.hablado}
+                onChange={(e) =>
+                  handleArrayChange("idiomas", index, "hablado", e.target.value)
+                }
+              >
+                <option value="">Nivel</option>
+                <option value="A1">A1</option>
+                <option value="A2">A2</option>
+                <option value="B1">B1</option>
+                <option value="B2">B2</option>
+                <option value="C1">C1</option>
+                <option value="C2">C2</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Expresión escrita</label>
+              <select
+                value={idioma.escrito}
+                onChange={(e) =>
+                  handleArrayChange("idiomas", index, "escrito", e.target.value)
+                }
+              >
+                <option value="">Nivel</option>
+                <option value="A1">A1</option>
+                <option value="A2">A2</option>
+                <option value="B1">B1</option>
+                <option value="B2">B2</option>
+                <option value="C1">C1</option>
+                <option value="C2">C2</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Certificado (si aplica)</label>
+              <input
+                type="text"
+                value={idioma.certificado}
+                onChange={(e) =>
+                  handleArrayChange(
+                    "idiomas",
+                    index,
+                    "certificado",
+                    e.target.value
+                  )
+                }
+                placeholder="Nombre del certificado y nivel"
+              />
+            </div>
+
+            <button
+              type="button"
+              className="remove-btn"
+              onClick={() => removeItem("idiomas", index)}
+            >
+              Eliminar
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="add-btn"
+          onClick={() => addNewItem("idiomas")}
+        >
+          + Añadir Idioma
+        </button>
+
+       
+        <h2>Habilidades personales</h2>
+        <div className="form-section">
+          <div className="form-group">
+            <label>Habilidades y competencias</label>
+            <textarea
+              name="habilidades"
+              value={formulario.habilidades}
+              onChange={handleChange}
+              rows={4}
+              placeholder="Ej: 
+* Buenas habilidades de comunicación adquiridas como gerente de ventas
+* Dominio de React y TypeScript
+* Capacidad para trabajar en equipo"
+            />
+          </div>
+        </div>
 
         <div className="form-actions">
           <button type="submit" className="submit-btn" disabled={isSubmitting}>
