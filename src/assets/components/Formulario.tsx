@@ -140,8 +140,7 @@ export function Formulario() {
 
     try {
       if (!e.currentTarget.checkValidity()) {
-        e.stopPropagation();
-        throw new Error("Por favor completa todos los campos requeridos");
+        
       }
 
       const data = { ...formulario };
