@@ -12,7 +12,6 @@ import {
   initialFormState,
 } from "./Interface";
 
-// Ajusta el tipo del contexto retornado por useAuth
 
 export function Formulario() {
   const [formulario, setFormulario] = useState<IFormulario>(initialFormState);
@@ -152,7 +151,7 @@ export function Formulario() {
       await setDoc(userDocRef, data, { merge: true });
 
       await fetch(
-        "https://edwing111.app.n8n.cloud/webhook-test/cv-formulario",
+        "https://edwing111.app.n8n.cloud/webhook/cv-formulario",
         {
           method: "POST",
           headers: {
@@ -676,7 +675,7 @@ export function Formulario() {
           + Añadir Idioma
         </button>
 
-        {/* Sección de Habilidades */}
+       
         <h2>Habilidades personales</h2>
         <div className="form-section">
           <div className="form-group">
