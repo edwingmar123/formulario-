@@ -153,7 +153,7 @@ export function Crear() {
         <input
           type="text"
           name="pais"
-          placeholder="Pays"
+          placeholder="Pays destination"
           value={crearData.pais}
           onChange={handleChange}
           required

@@ -214,7 +214,7 @@ export function Formulario() {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="required">Pays</label>
+                  <label className="required">Pays destination</label>
                   <input
                     type="text"
                     name="pais"
