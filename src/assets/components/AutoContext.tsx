@@ -34,7 +34,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState<boolean>(true);
 
   const syncUserData = async (currentUser: User) => {
-    const userRef = doc(db, "users", currentUser.uid);
+    const userRef = doc(db, "informacion", currentUser.uid);
     const docSnap = await getDoc(userRef);
 
     if (!docSnap.exists()) {
@@ -74,7 +74,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!user) throw new Error("Usuario no autenticado");
 
     try {
-      const cvRef = doc(collection(db, "usercv"));
+      const cvRef = doc(collection(db, "intinerario"));
       await setDoc(cvRef, {
         ...cvData,
         userId: user.uid,

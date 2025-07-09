@@ -1,81 +1,30 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "./AutoContext";
-import { User } from "firebase/auth";
+import { useState } from "react";
+import { Crear } from "./Crear";
 import Swal from "sweetalert2";
 import { db } from "./Credenciales";
-import { doc, setDoc } from "firebase/firestore";
-import {
-  IFormulario,
-  emptyExperiencia,
-  emptyEducacion,
-  emptyIdioma,
-  initialFormState,
-} from "./Interface";
-
+import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
+import Captura from "../img/Captura .png";
+import { IFormulario, initialFormState } from "./Interface";
 
 export function Formulario() {
   const [formulario, setFormulario] = useState<IFormulario>(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState("informacion");
 
-  const authContext = useAuth();
-  const currentUser = (authContext as any)?.currentUser as User | null;
-
-  useEffect(() => {
-    if (currentUser) {
-      setFormulario((prev) => ({
-        ...prev,
-        nombre: currentUser.displayName || "",
-        email: currentUser.email || "",
-      }));
-    }
-  }, [currentUser]);
-
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormulario((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleArrayChange = <T extends keyof IFormulario>(
-    section: T,
-    index: number,
-    field: string,
-    value: string
-  ) => {
-    const newArray = [...(formulario[section] as any[])];
-    newArray[index] = { ...newArray[index], [field]: value };
-    setFormulario((prev) => ({ ...prev, [section]: newArray }));
-  };
-
-  const addNewItem = (
-    section: keyof Pick<IFormulario, "experiencias" | "educaciones" | "idiomas">
-  ) => {
-    const templates = {
-      experiencias: emptyExperiencia,
-      educaciones: emptyEducacion,
-      idiomas: emptyIdioma,
-    };
-    setFormulario((prev) => ({
-      ...prev,
-      [section]: [...prev[section], templates[section]],
-    }));
-  };
-
-  const removeItem = (
-    section: keyof Pick<
-      IFormulario,
-      "experiencias" | "educaciones" | "idiomas"
-    >,
-    index: number
-  ) => {
-    setFormulario((prev) => {
-      const updated = [...prev[section]];
-      updated.splice(index, 1);
-      return { ...prev, [section]: updated };
-    });
+  const usuarioYaRegistrado = async (email: string, telefono: string) => {
+    const informacionRef = collection(db, "informacion");
+    const q = query(
+      informacionRef,
+      where("email", "==", email),
+      where("telefono", "==", telefono)
+    );
+    const querySnapshot = await getDocs(q);
+    return !querySnapshot.empty;
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,71 +48,55 @@ export function Formulario() {
   };
 
   const validateForm = (): boolean => {
-    if (!formulario.nombre || !formulario.email || !formulario.puesto) {
+    if (!formulario.nombre) {
       Swal.fire({
         icon: "error",
-        title: "Campos requeridos",
-        text: "Nombre, email y puesto son campos obligatorios",
+        title: "Campo requerido",
+        text: "El nombre es obligatorio",
       });
       return false;
     }
-
-    if (formulario.telefono && !/^\d{10,15}$/.test(formulario.telefono)) {
-      Swal.fire({
-        icon: "error",
-        title: "Teléfono inválido",
-        text: "El teléfono debe tener entre 10 y 15 dígitos numéricos",
-      });
-      return false;
-    }
-
-    if (
-      formulario.email &&
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formulario.email)
-    ) {
-      Swal.fire({
-        icon: "error",
-        title: "Email inválido",
-        text: "Por favor ingresa un email válido",
-      });
-      return false;
-    }
-
     return true;
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     if (!validateForm()) return;
     setIsSubmitting(true);
 
     try {
-      if (!e.currentTarget.checkValidity()) {
-        
+      const yaRegistrado = await usuarioYaRegistrado(
+        formulario.email,
+        formulario.telefono
+      );
+
+      if (yaRegistrado) {
+        await Swal.fire({
+          icon: "warning",
+          title: "Ya usó su prueba",
+          text: "Este correo o número ya está registrado.",
+        });
+        setIsSubmitting(false);
+        return;
       }
 
-      const data = { ...formulario };
-
-      const randomId = Date.now().toString();
-      const userDocRef = doc(db, "usercv", randomId);
-      await setDoc(userDocRef, data, { merge: true });
+      await addDoc(collection(db, "informacion"), { ...formulario });
 
       await fetch(
-        "https://edwing111.app.n8n.cloud/webhook/cv-formulario",
+        "https://appn8napp.flowmaticn8n.us/webhook-test/d8a36c09-92ca-4444-b475-f86290ee5b36",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(data),
+          body: JSON.stringify(formulario),
         }
       );
 
       await Swal.fire({
         icon: "success",
-        title: "CV Guardado",
-        text: "Tu información se ha guardado correctamente",
+        title: "Información guardada",
+        text: "Tus datos se han guardado correctamente",
         timer: 2000,
       });
 
@@ -176,535 +109,177 @@ export function Formulario() {
         text:
           error instanceof Error
             ? error.message
-            : "Ocurrió un error al guardar tu CV",
+            : "Ocurrió un error al guardar tu información",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
+
   return (
-    <div className="form-container">
-      <h1>Formulario de CV Profesional</h1>
-      <form onSubmit={handleSubmit} noValidate>
-        <h2>Información Personal</h2>
-        <div className="form-section">
-          <div className="form-group">
-            <label className="required">Nombre completo</label>
-            <input
-              type="text"
-              name="nombre"
-              value={formulario.nombre}
-              onChange={handleChange}
-              required
-              placeholder="Ej: Juan Pérez"
-            />
-          </div>
+    <div className="todo">
+      <div className="formulario">
+        <div className="logo-container ">
+          <img
+            src="https://res.cloudinary.com/dcyuqvulc/image/upload/v1747222224/FullLogo_Transparent_NoBuffer_3_wmzo9v.png"
+            alt="Logo"
+          />
 
-          <div className="form-group">
-            <label className="required">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formulario.email}
-              onChange={handleChange}
-              required
-              placeholder="tu@email.com"
-            />
-          </div>
+          <img
+            style={{
+              width: "60px",
+              
+              objectFit: "contain",
+              position: "absolute",
+              left: "350px",
+              border :"3px solid white",
+              borderRadius: "50%",
+              marginTop: "-25px ",
+              marginLeft: "90px",
+            }}
+            src="https://res.cloudinary.com/dcyuqvulc/image/upload/v1746187223/Disen%CC%83o_sin_ti%CC%81tulo_8_4_kps5o4.png"
+            alt=""
+          />
+          <p style={{ position: "absolute", fontSize: "10px",width: "150px", left: "400px", marginTop: "-170px" }} >Fondatrice Flowmatic Expert Automatisation IA Spécialisé dans le tourisme</p>
 
-          <div className="form-group">
-            <label>Dirección</label>
-            <input
-              type="text"
-              name="direccion"
-              value={formulario.direccion}
-              onChange={handleChange}
-              placeholder="Número, calle, ciudad, código postal, país"
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Teléfono</label>
-            <input
-              type="tel"
-              name="telefono"
-              value={formulario.telefono}
-              onChange={handleChange}
-              pattern="[0-9]{10,15}"
-              title="10-15 dígitos numéricos"
-              placeholder="Ej: 1234567890"
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Sitio web</label>
-            <input
-              type="url"
-              name="website"
-              value={formulario.website}
-              onChange={handleChange}
-              placeholder="https://tusitio.com"
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Cuenta de mensajería</label>
-            <input
-              type="text"
-              name="mensajeria"
-              value={formulario.mensajeria}
-              onChange={handleChange}
-              placeholder="Ej: WhatsApp, Telegram"
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Género</label>
-            <select
-              name="genero"
-              value={formulario.genero}
-              onChange={handleChange}
-            >
-              <option value="">Seleccionar</option>
-              <option value="Masculino">Masculino</option>
-              <option value="Femenino">Femenino</option>
-              <option value="Otro">Otro</option>
-              <option value="Prefiero no decir">Prefiero no decir</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Fecha de nacimiento</label>
-            <input
-              type="date"
-              name="fechaNacimiento"
-              value={formulario.fechaNacimiento}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Nacionalidad</label>
-            <input
-              type="text"
-              name="nacionalidad"
-              value={formulario.nacionalidad}
-              onChange={handleChange}
-              placeholder="Ej: Mexicana"
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Foto</label>
-            <input type="file" accept="image/*" onChange={handleFileChange} />
-            {formulario.foto && (
-              <img
-                src={formulario.foto}
-                alt="Preview"
-                className="photo-preview"
-              />
-            )}
-          </div>
+          <img
+            style={{
+              width: "400px",
+              height: "300px ",
+              position: "absolute",
+              objectFit: "contain",
+              marginTop: "-120px ",
+              marginLeft: "-570px",
+            }}
+            src="https://res.cloudinary.com/dcyuqvulc/image/upload/v1751632193/FullLogo_Transparent_17_rnnma4.png"
+            alt=""
+          />
         </div>
 
-        {/* Sección de Puesto Solicitado */}
-        <h2>Puesto solicitado</h2>
-        <div className="form-section">
-          <div className="form-group">
-            <label className="required">
-              Puesto/Posición/Estudios aplicados
-            </label>
-            <input
-              type="text"
-              name="puesto"
-              value={formulario.puesto}
-              onChange={handleChange}
-              required
-              placeholder="Ej: Desarrollador Frontend"
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Declaración personal</label>
-            <textarea
-              name="declaracionPersonal"
-              value={formulario.declaracionPersonal}
-              onChange={handleChange}
-              rows={4}
-              placeholder="Breve resumen de tus objetivos profesionales"
-            />
-          </div>
-        </div>
-
-        {/* Sección de Experiencia Laboral */}
-        <h2>Experiencia laboral</h2>
-        {formulario.experiencias.map((exp, index) => (
-          <div key={index} className="form-section array-item">
-            <div className="form-group">
-              <label>Fecha (Desde - Hasta)</label>
-              <input
-                type="text"
-                value={exp.fecha}
-                onChange={(e) =>
-                  handleArrayChange(
-                    "experiencias",
-                    index,
-                    "fecha",
-                    e.target.value
-                  )
-                }
-                placeholder="MM/AAAA - MM/AAAA"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Puesto ocupado</label>
-              <input
-                type="text"
-                value={exp.puesto}
-                onChange={(e) =>
-                  handleArrayChange(
-                    "experiencias",
-                    index,
-                    "puesto",
-                    e.target.value
-                  )
-                }
-                placeholder="Ej: Desarrollador Frontend"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Empleador</label>
-              <input
-                type="text"
-                value={exp.empleador}
-                onChange={(e) =>
-                  handleArrayChange(
-                    "experiencias",
-                    index,
-                    "empleador",
-                    e.target.value
-                  )
-                }
-                placeholder="Nombre de la empresa"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Responsabilidades</label>
-              <textarea
-                value={exp.responsabilidades}
-                onChange={(e) =>
-                  handleArrayChange(
-                    "experiencias",
-                    index,
-                    "responsabilidades",
-                    e.target.value
-                  )
-                }
-                rows={3}
-                placeholder="Describe tus responsabilidades en este puesto"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Sector</label>
-              <input
-                type="text"
-                value={exp.sector}
-                onChange={(e) =>
-                  handleArrayChange(
-                    "experiencias",
-                    index,
-                    "sector",
-                    e.target.value
-                  )
-                }
-                placeholder="Ej: Tecnología, Salud, Educación"
-              />
-            </div>
-
-            <button
-              type="button"
-              className="remove-btn"
-              onClick={() => removeItem("experiencias", index)}
-            >
-              Eliminar
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          className="add-btn"
-          onClick={() => addNewItem("experiencias")}
-        >
-          + Añadir Experiencia
-        </button>
-
-        {/* Sección de Educación */}
-        <h2>Educación y formación</h2>
-        {formulario.educaciones.map((edu, index) => (
-          <div key={index} className="form-section array-item">
-            <div className="form-group">
-              <label>Fecha (Desde - Hasta)</label>
-              <input
-                type="text"
-                value={edu.fecha}
-                onChange={(e) =>
-                  handleArrayChange(
-                    "educaciones",
-                    index,
-                    "fecha",
-                    e.target.value
-                  )
-                }
-                placeholder="MM/AAAA - MM/AAAA"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Título obtenido</label>
-              <input
-                type="text"
-                value={edu.titulo}
-                onChange={(e) =>
-                  handleArrayChange(
-                    "educaciones",
-                    index,
-                    "titulo",
-                    e.target.value
-                  )
-                }
-                placeholder="Ej: Licenciatura en Informática"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Nivel EQF (si aplica)</label>
-              <input
-                type="text"
-                value={edu.nivel}
-                onChange={(e) =>
-                  handleArrayChange(
-                    "educaciones",
-                    index,
-                    "nivel",
-                    e.target.value
-                  )
-                }
-                placeholder="Ej: Nivel 5"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Institución</label>
-              <input
-                type="text"
-                value={edu.institucion}
-                onChange={(e) =>
-                  handleArrayChange(
-                    "educaciones",
-                    index,
-                    "institucion",
-                    e.target.value
-                  )
-                }
-                placeholder="Nombre de la institución"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Materias principales/habilidades</label>
-              <textarea
-                value={edu.materias}
-                onChange={(e) =>
-                  handleArrayChange(
-                    "educaciones",
-                    index,
-                    "materias",
-                    e.target.value
-                  )
-                }
-                rows={2}
-                placeholder="Lista de materias relevantes o habilidades adquiridas"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Logros</label>
-              <textarea
-                value={edu.logros}
-                onChange={(e) =>
-                  handleArrayChange(
-                    "educaciones",
-                    index,
-                    "logros",
-                    e.target.value
-                  )
-                }
-                rows={2}
-                placeholder="Premios, reconocimientos o logros especiales"
-              />
-            </div>
-
-            <button
-              type="button"
-              className="remove-btn"
-              onClick={() => removeItem("educaciones", index)}
-            >
-              Eliminar
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          className="add-btn"
-          onClick={() => addNewItem("educaciones")}
-        >
-          + Añadir Educación
-        </button>
-
-        {/* Sección de Idiomas */}
-        <h2>Idiomas</h2>
-        {formulario.idiomas.map((idioma, index) => (
-          <div key={index} className="form-section array-item">
-            <div className="form-group">
-              <label>Idioma</label>
-              <input
-                type="text"
-                value={idioma.idioma}
-                onChange={(e) =>
-                  handleArrayChange("idiomas", index, "idioma", e.target.value)
-                }
-                placeholder="Ej: Inglés"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Comprensión auditiva</label>
-              <select
-                value={idioma.comprension}
-                onChange={(e) =>
-                  handleArrayChange(
-                    "idiomas",
-                    index,
-                    "comprension",
-                    e.target.value
-                  )
-                }
-              >
-                <option value="">Nivel</option>
-                <option value="A1">A1</option>
-                <option value="A2">A2</option>
-                <option value="B1">B1</option>
-                <option value="B2">B2</option>
-                <option value="C1">C1</option>
-                <option value="C2">C2</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Expresión oral</label>
-              <select
-                value={idioma.hablado}
-                onChange={(e) =>
-                  handleArrayChange("idiomas", index, "hablado", e.target.value)
-                }
-              >
-                <option value="">Nivel</option>
-                <option value="A1">A1</option>
-                <option value="A2">A2</option>
-                <option value="B1">B1</option>
-                <option value="B2">B2</option>
-                <option value="C1">C1</option>
-                <option value="C2">C2</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Expresión escrita</label>
-              <select
-                value={idioma.escrito}
-                onChange={(e) =>
-                  handleArrayChange("idiomas", index, "escrito", e.target.value)
-                }
-              >
-                <option value="">Nivel</option>
-                <option value="A1">A1</option>
-                <option value="A2">A2</option>
-                <option value="B1">B1</option>
-                <option value="B2">B2</option>
-                <option value="C1">C1</option>
-                <option value="C2">C2</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Certificado (si aplica)</label>
-              <input
-                type="text"
-                value={idioma.certificado}
-                onChange={(e) =>
-                  handleArrayChange(
-                    "idiomas",
-                    index,
-                    "certificado",
-                    e.target.value
-                  )
-                }
-                placeholder="Nombre del certificado y nivel"
-              />
-            </div>
-
-            <button
-              type="button"
-              className="remove-btn"
-              onClick={() => removeItem("idiomas", index)}
-            >
-              Eliminar
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          className="add-btn"
-          onClick={() => addNewItem("idiomas")}
-        >
-          + Añadir Idioma
-        </button>
-
-       
-        <h2>Habilidades personales</h2>
-        <div className="form-section">
-          <div className="form-group">
-            <label>Habilidades y competencias</label>
-            <textarea
-              name="habilidades"
-              value={formulario.habilidades}
-              onChange={handleChange}
-              rows={4}
-              placeholder="Ej: 
-* Buenas habilidades de comunicación adquiridas como gerente de ventas
-* Dominio de React y TypeScript
-* Capacidad para trabajar en equipo"
-            />
-          </div>
-        </div>
-
-        <div className="form-actions">
-          <button type="submit" className="submit-btn" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <span className="loading-spinner"></span>
-                Procesando...
-              </>
-            ) : (
-              "Guardar CV"
-            )}
+        <div className="tab-buttons">
+          <button
+            className={`tab-btn ${activeTab === "informacion" ? "active" : ""}`}
+            onClick={() => setActiveTab("informacion")}
+          >
+            Itinéraire
+          </button>
+          <button
+            className={`tab-btn ${activeTab === "itinerario" ? "active" : ""}`}
+            onClick={() => setActiveTab("itinerario")}
+          >
+            Construire l'itinéraire
           </button>
         </div>
-      </form>
+
+        {activeTab === "informacion" && (
+          <div className="form-content">
+            <h1 className="form-title">Informations pour l'itinéraire</h1>
+            <form
+              style={{ borderRadius: "12px" }}
+              onSubmit={handleSubmit}
+              noValidate
+            >
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="required">Nom complet</label>
+                  <input
+                    type="text"
+                    name="nombre"
+                    value={formulario.nombre}
+                    onChange={handleChange}
+                    required
+                    placeholder="Ej: Juan Pérez"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="required">Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formulario.email}
+                    onChange={handleChange}
+                    required
+                    placeholder="Ej: ejemplo@email.com"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="required">Téléphone</label>
+                  <input
+                    type="tel"
+                    name="telefono"
+                    value={formulario.telefono}
+                    onChange={handleChange}
+                    required
+                    placeholder="Ej: 1234567890"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="required">Pays</label>
+                  <input
+                    type="text"
+                    name="pais"
+                    value={formulario.pais}
+                    onChange={handleChange}
+                    required
+                    placeholder="Ej: Pays"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Photo</label>
+                  <div className="file-upload">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
+                    <span>
+                      Faites glisser ou cliquez pour télécharger une photo
+                    </span>
+                  </div>
+                  {formulario.foto && (
+                    <div className="preview-img">
+                      <img src={formulario.foto} alt="Preview" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="image-example">
+                <h3>Exemple d'image pour l'itinéraire à télécharger:</h3>
+                <div className="image-container">
+                  <img src={Captura} alt="Ejemplo de itinerario" />
+                </div>
+              </div>
+
+              <div className="form-actions">
+                <button
+                  type="submit"
+                  className="submit-btn"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <div className="spinner-container">
+                      <div className="spinner"></div>
+                      Procesando...
+                    </div>
+                  ) : (
+                    "Enregistrer les informations"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {activeTab === "itinerario" && (
+          <div className="form-content">
+            <Crear />
+          </div>
+        )}
+      </div>
+      <p style={{ textAlign: "center", marginTop: "-28px" }}>
+        © 2025 Flowmatic – L'IA au service des Pros du Tourisme
+      </p>
     </div>
   );
 }
