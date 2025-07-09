@@ -120,8 +120,8 @@ export function Formulario() {
     <div className="todo">
       <div className="formulario">
         <div className="logo-container ">
-          <img
-            src="https://res.cloudinary.com/dcyuqvulc/image/upload/v1747222224/FullLogo_Transparent_NoBuffer_3_wmzo9v.png"
+          <img style={{ width: "600px", objectFit: "contain" }}
+            src="https://res.cloudinary.com/dcyuqvulc/image/upload/v1751632261/FullLogo_Transparent_18_nsovdv.png"
             alt="Logo"
           />
 
@@ -134,13 +134,13 @@ export function Formulario() {
               left: "350px",
               border :"3px solid white",
               borderRadius: "50%",
-              marginTop: "-25px ",
+              marginTop: "-9px ",
               marginLeft: "90px",
             }}
             src="https://res.cloudinary.com/dcyuqvulc/image/upload/v1746187223/Disen%CC%83o_sin_ti%CC%81tulo_8_4_kps5o4.png"
             alt=""
           />
-          <p style={{ position: "absolute", fontSize: "10px",width: "150px", left: "400px", marginTop: "-170px" }} >Fondatrice Flowmatic Expert Automatisation IA Spécialisé dans le tourisme</p>
+          <p style={{ position: "absolute", fontSize: "10px",width: "150px", left: "400px", marginTop: "-120px" }} >Fondatrice Flowmatic Expert Automatisation IA </p>
 
           <img
             style={{

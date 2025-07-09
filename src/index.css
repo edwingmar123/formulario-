@@ -86,6 +86,8 @@ body {
   text-align: center;
   margin-bottom: 20px;
   position: relative;
+  width: 300px;
+  
 }
 
 .logo-container img {
