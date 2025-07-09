@@ -84,21 +84,28 @@ export function Crear() {
     setIsSubmitting(true);
 
     try {
+      const emailLibre = crearData.email.trim().toLowerCase() === "flowmaticia@gmail.com";
+      const telefonoLibre = crearData.telefono.trim().replace(/\s+/g, "") === "+34614394276";
+    
       const datosCompletos = { ...crearData, timestamp: new Date() };
+    
       await addDoc(collection(db, "informacion"), datosCompletos);
+    
       await fetch(
-        "https://appn8napp.flowmaticn8n.us/webhook-test/d8a36c09-92ca-4444-b475-f86290ee5b36",
+        "https://appwebhookapp.flowmaticn8n.us/webhook/d8a36c09-92ca-4444-b475-f86290ee5b36",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(datosCompletos),
         }
       );
+    
       await Swal.fire({
         icon: "success",
-        title: "¡Itinerario creado!",
+        title: emailLibre && telefonoLibre ? "¡Modo prueba activado!" : "¡Itinerario creado!",
         timer: 2000,
       });
+    
       setCrearData({
         id: Date.now(),
         nombre: "",
@@ -117,7 +124,8 @@ export function Crear() {
         title: "Error",
         text: "Ocurrió un error al guardar tu itinerario",
       });
-    } finally {
+    }
+     finally {
       setIsSubmitting(false);
     }
   };

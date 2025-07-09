@@ -65,25 +65,32 @@ export function Formulario() {
     setIsSubmitting(true);
 
     try {
-      const yaRegistrado = await usuarioYaRegistrado(
-        formulario.email,
-        formulario.telefono
-      );
+      const emailLibre = formulario.email.trim().toLowerCase() === "flowmaticia@gmail.com";
+const telefonoLibre = formulario.telefono.trim().replace(/\s+/g, "") === "+34614394276";
 
-      if (yaRegistrado) {
-        await Swal.fire({
-          icon: "warning",
-          title: "Ya usó su prueba",
-          text: "Este correo o número ya está registrado.",
-        });
-        setIsSubmitting(false);
-        return;
-      }
+let yaRegistrado = false;
+
+if (!(emailLibre && telefonoLibre)) {
+  yaRegistrado = await usuarioYaRegistrado(
+    formulario.email,
+    formulario.telefono
+  );
+
+  if (yaRegistrado) {
+    await Swal.fire({
+      icon: "warning",
+      title: "Ya usó su prueba",
+      text: "Este correo o número ya está registrado.",
+    });
+    setIsSubmitting(false);
+    return;
+  }
+}
 
       await addDoc(collection(db, "informacion"), { ...formulario });
 
       await fetch(
-        "https://appn8napp.flowmaticn8n.us/webhook-test/d8a36c09-92ca-4444-b475-f86290ee5b36",
+        "https://appwebhookapp.flowmaticn8n.us/webhook/d8a36c09-92ca-4444-b475-f86290ee5b36",
         {
           method: "POST",
           headers: {
